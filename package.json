@@ -1,0 +1,23 @@
+{
+  "name": "lhint",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typings": "./dist/index.d.ts",
+  "scripts": {
+    "test": "vitest",
+    "format": "prettier ./src --write",
+    "build": "tsc -p ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "prettier": "^3.7.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7",
+    "vitest": "^4.0.15"
+  }
+}

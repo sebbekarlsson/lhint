@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "first_name": "Billie",
+    "last_name": "Figgures",
+    "email": "bfiggures0@businesswire.com",
+    "gender": "Male",
+    "ip_address": null
+  },
+  {
+    "id": 2,
+    "first_name": "Anatola",
+    "last_name": "Mosdall",
+    "email": "amosdall1@marketwatch.com",
+    "gender": "Female",
+    "ip_address": null
+  },
+  {
+    "id": 3,
+    "first_name": "Marianna",
+    "last_name": "Virgin",
+    "email": "mvirgin2@apache.org",
+    "gender": "Female",
+    "ip_address": null
+  },
+  {
+    "id": 4,
+    "first_name": "Marcela",
+    "last_name": "Grimston",
+    "email": "mgrimston3@uol.com.br",
+    "gender": "Female",
+    "ip_address": null
+  },
+  {
+    "id": 5,
+    "first_name": "Dewey",
+    "last_name": "Postance",
+    "email": "dpostance4@seesaa.net",
+    "gender": "Male",
+    "ip_address": null
+  },
+  {
+    "id": 6,
+    "first_name": "Nelia",
+    "last_name": "Soper",
+    "email": "nsoper5@blogspot.com",
+    "gender": "Female",
+    "ip_address": null
+  },
+  {
+    "id": 7,
+    "first_name": "Gardie",
+    "last_name": "Kellogg",
+    "email": "gkellogg6@bloglines.com",
+    "gender": "Male",
+    "ip_address": null
+  },
+  {
+    "id": 8,
+    "first_name": "Frasquito",
+    "last_name": "Capstaff",
+    "email": "fcapstaff7@nature.com",
+    "gender": null,
+    "ip_address": "75.67.220.103"
+  },
+  {
+    "id": 9,
+    "first_name": "Prinz",
+    "last_name": "Le Grand",
+    "email": "plegrand8@google.com.au",
+    "gender": "Male",
+    "ip_address": "195.225.161.5"
+  },
+  {
+    "id": 10,
+    "first_name": "Olympie",
+    "last_name": "Petow",
+    "email": "opetow9@facebook.com",
+    "gender": "Female",
+    "ip_address": "254.122.177.108"
+  }
+]
