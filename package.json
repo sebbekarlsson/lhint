@@ -10,7 +10,7 @@
   "scripts": {
     "test": "vitest",
     "format": "prettier ./src --write",
-    "build": "tsc -p ./tsconfig.json"
+    "build": "tsc -p ./tsconfig.build.json"
   },
   "devDependencies": {
     "@types/node": "^25.0.1",

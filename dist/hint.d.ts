@@ -32,40 +32,36 @@ export type HintLiteralNumber<T extends number = number> = HintBase<{
     type: "literal-number";
     value: T;
 }>;
-export type Hint<T = unknown, K = PropertyKey> = HintString | HintNumber | HintBoolean | HintUndefined | HintNull | HintUnknown | HintLiteralString | HintLiteralNumber | HintBase<{
+export type Hint = HintString | HintNumber | HintBoolean | HintUndefined | HintNull | HintUnknown | HintLiteralString | HintLiteralNumber | HintBase<{
     type: 'union';
-    of: T extends Array<Hint> ? T : Array<Hint>;
-    _hint: true;
+    of: Array<Hint>;
 }> | HintBase<{
     type: 'array';
-    of: T extends Hint ? T : Hint;
-    _hint: true;
+    of: Hint;
 }> | HintBase<{
     type: 'mapping';
-    of: K extends PropertyKey ? T extends Hint ? Record<K, T> : Record<PropertyKey, Hint> : Record<PropertyKey, T>;
-    _hint: true;
+    of: Record<PropertyKey, Hint>;
 }> | HintBase<{
     type: 'record';
-    key: K extends Hint ? K : Hint;
-    value: T extends Hint ? T : Hint;
-    _hint: true;
+    key: Hint;
+    value: Hint;
 }>;
-export type Unhint<T> = T extends HintString ? string : T extends HintNumber ? number : T extends HintBoolean ? boolean : T extends HintUndefined ? undefined : T extends HintLiteralString ? (T extends HintLiteralString<infer V> ? V : HintLiteralString['value']) : T extends HintLiteralNumber ? (T extends HintLiteralNumber<infer V> ? V : HintLiteralString['value']) : T extends {
+export type Unhint<T extends Hint> = T extends HintString ? string : T extends HintNumber ? number : T extends HintBoolean ? boolean : T extends HintUndefined ? undefined : T extends HintNull ? null : T extends HintLiteralString ? (T extends HintLiteralString<infer V> ? V : HintLiteralString['value']) : T extends HintLiteralNumber ? (T extends HintLiteralNumber<infer V> ? V : HintLiteralNumber['value']) : T extends {
     type: 'union';
     of: infer V;
-} ? Unhint<ToUnion<V>> : T extends {
+} ? V extends Hint ? Unhint<ToUnion<V>> : never : T extends {
     type: 'array';
     of: infer V;
-} ? Array<Unhint<V>> : T extends {
+} ? V extends Hint ? Array<Unhint<V>> : never : T extends {
     type: 'mapping';
     of: infer V;
 } ? (V extends Record<infer _K, infer _J> ? {
-    [Prop in keyof V]: Unhint<V[Prop]>;
+    [Prop in keyof V]: V[Prop] extends Hint ? Unhint<V[Prop]> : never;
 } : never) : T extends {
     type: 'record';
     key: infer K;
     value: infer J;
-} ? (Unhint<K> extends PropertyKey ? Record<Unhint<K>, Unhint<J>> : never) : T extends {
+} ? K extends Hint ? J extends Hint ? Record<Unhint<K> extends infer G ? G extends string ? G : never : never, Unhint<J>> : never : never : T extends {
     type: 'unknown';
 } ? unknown : never;
 export type WithHintMeta<T extends Hint, Meta extends HintMeta> = T & {

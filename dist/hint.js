@@ -228,4 +228,8 @@ var hints;
         return y;
     };
 })(hints || (exports.hints = hints = {}));
+//const x = hints.record(hints.literal('hello'), hints.number());
+//const y = hints.mapping({ x: hints.number(), y: hints.number() });
+////
+//const w: Unhint<typeof y>
 //# sourceMappingURL=hint.js.map

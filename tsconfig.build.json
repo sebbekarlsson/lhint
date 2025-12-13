@@ -3,7 +3,7 @@
     "module": "nodenext",
     "target": "esnext",
     "types": ["node"],
-    "lib": ["esnext", "es2023"],
+    "lib": ["esnext"],
     "outDir": "./dist",
     "sourceMap": true,
     "declaration": true,
@@ -20,5 +20,7 @@
     "paths": {
       "#/mock/*": ["./mock/*"]
     }
-  } 
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }
