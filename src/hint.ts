@@ -66,6 +66,7 @@ export type HintIsOptional<T extends HintBase<unknown, HintMeta>> =
 
 // prettier-ignore
 export type Unhint<T extends Hint> =
+  T extends { type: 'union', of: infer V } ? V extends Hint[] ? Unhint<ToUnion<V>> : never : 
   T extends HintString ? string :
   T extends HintNumber ? number :
   T extends HintBoolean ? boolean :
@@ -74,7 +75,6 @@ export type Unhint<T extends Hint> =
   T extends HintNull ? null :
   T extends HintLiteralString ? (T extends HintLiteralString<infer V> ? V : HintLiteralString['value']) :
   T extends HintLiteralNumber ? (T extends HintLiteralNumber<infer V> ? V : HintLiteralNumber['value']) :
-  T extends { type: 'union', of: infer V } ? V extends Hint ? Unhint<ToUnion<V>> : never : 
   T extends { type: 'array', of: infer V } ? V extends Hint ? Array<Unhint<V>> : never : 
   T extends { type: 'mapping', of: infer V } ? (
     V extends Record<infer _K, infer _J> ? (
@@ -115,7 +115,7 @@ export namespace hints {
 
   export const union = <Of extends Array<Hint>>(
     of: Of,
-  ): Extract<Hint, { type: "union" }> => {
+  ): { type: 'union'; of: Of, _hint: true } => {
     return asHint({
       type: "union",
       of: uniqueBy(of, (x) => JSON.stringify(x)),
@@ -481,3 +481,7 @@ export namespace hints {
 //});
 //////
 //const w: Unhint<typeof y>;
+
+//const x = hints.union([hints.literal('xyz'), hints.literal('abc')]);
+//
+//const y: Unhint<typeof x>

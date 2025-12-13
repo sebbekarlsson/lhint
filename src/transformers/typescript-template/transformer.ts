@@ -31,7 +31,7 @@ export const TypescriptTemplateTransformer: HintTransformer<string> = {
           return `Record<${transform(x.key, 0, 0)}, ${transform(x.value, 0, 0)}>`;
         case "mapping":
           return [
-            `${mkPad(depth <= 1 ? 0 : padding)}{\n`,
+            `{\n`,
             Object.entries(x.of)
               .map(([k, v]) => {
                 const isOpt = hints.util.isOptional(v);

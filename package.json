@@ -7,10 +7,16 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "typings": "./dist/index.d.ts",
+  "bin": {
+    "lhint": "./bin/cli/cli.js"
+  },
   "scripts": {
     "test": "vitest",
     "format": "prettier ./src --write",
-    "build": "tsc -p ./tsconfig.build.json"
+    "build:main": "tsc -p ./tsconfig.build.json",
+    "build:bin": "tsc -p ./tsconfig.build.bin.json && echo \"#!/usr/bin/env node\"\"\n\"\"$(cat ./bin/cli/cli.js)\" > ./bin/cli/cli.js",
+    "build": "npm run build:main && npm run build:bin",
+    "bin": "node ./bin/cli/cli.js"
   },
   "devDependencies": {
     "@types/node": "^25.0.1",

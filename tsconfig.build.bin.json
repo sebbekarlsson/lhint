@@ -4,7 +4,7 @@
     "target": "esnext",
     "types": ["node"],
     "lib": ["esnext"],
-    "outDir": "./dist",
+    "outDir": "./bin",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -21,6 +21,5 @@
       "#/mock/*": ["./mock/*"]
     }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts", "src/cli"]
+  "include": ["src/cli/**/*.ts"]
 }

@@ -1,103 +1,75 @@
-import { Hint, HintMapping, hints, Unhint } from "../hint";
-import { validate } from "../validation/validate";
+import { existsSync } from "fs";
+import { hints } from "../hint";
+import { makeCommand, registerCommand, runCommand } from "./command";
+import fs from "fs/promises";
+import { JSONSchemaTransformer, TypescriptTemplateTransformer } from "../transformers";
 
-const removePrefix = (x: string, prefix: string): string => {
-  if (!x.startsWith(prefix)) return x;
-  return x.slice(prefix.length);
-};
-
-const removePrefixes = (x: string, prefixes: string[]): string => {
-  for (const prefix of prefixes) {
-    x = removePrefix(x, prefix);
+const getContent = async (path: string): Promise<unknown> => {
+  if (path.startsWith("http")) {
+    const req = await fetch(path, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const data = await req.json();
+    return data;
   }
-  return x;
-};
-
-const argsToRecord = (args: string[]): Record<string, string | boolean> => {
-  const rec: Record<string, string | boolean> = {};
-  for (let i = 0; i < args.length; i++) {
-    const key = args[i]!;
-    if (key.startsWith("-")) {
-      const value = args[i + 1];
-      if (!value) continue;
-      if (value.startsWith("-")) {
-        rec[removePrefixes(key, ["--", "-"])] = true;
-        continue;
-      }
-      rec[removePrefixes(key, ["--", "-"])] = value;
-    }
+  if (existsSync(path)) {
+    const content = await fs.readFile(path, { encoding: "utf-8" });
+    return JSON.parse(content);
   }
-  return rec;
+  return JSON.parse(path);
 };
 
-type Command<Args extends HintMapping> = {
-  name: string;
-  hint: Args;
-  fn: (args: Unhint<Args>) => void | Promise<void>;
-};
-
-type RunnableCommand<Args extends HintMapping> = {
-  name: string;
-  hint: Args;
-  fn: (args: Unhint<Args>) => void | Promise<void>;
-  run: (args: unknown) => Promise<void>;
-};
-
-const makeCommand = <Args extends HintMapping>(
-  command: Command<Args>,
-): RunnableCommand<Args> => {
-  return {
-    ...command,
-    run: async (args: unknown) => {
-      const result = validate(args as unknown, command.hint, {
-        allowExtraProperties: true,
-      });
-      if (result.ok) {
-        return await command.fn(
-          // @ts-ignore
-          result.value,
-        );
-      }
-      throw new Error(result.error.summary);
+registerCommand(
+  makeCommand({
+    name: "hint",
+    hint: hints.mapping({
+      source: hints.string(),
+    }),
+    fn: async ({ source }) => {
+      const content = await getContent(source);
+      const hint = hints.auto(content);
+      console.log(JSON.stringify(hint, undefined, 2));
     },
-  };
-};
-
-const cmd = makeCommand({
-  name: "hello",
-  hint: hints.mapping({
-    age: hints.coerced(hints.number(), (x) => Number(x)),
   }),
-  fn: (args) => {
-    console.log("hello world", args);
-  },
-});
+);
 
-const commands: Record<string, RunnableCommand<HintMapping>> = {
-  [cmd.name]: cmd,
-};
+registerCommand(
+  makeCommand({
+    name: "transform",
+    hint: hints.mapping({
+      source: hints.string(),
+      format: hints.union([
+        hints.literal('typescript'),
+        hints.literal('json-schema'),
+        hints.literal('hint'),
+      ])
+    }),
+    fn: async ({ source, format }) => {
+      const content = await getContent(source);
+      const hint = hints.auto(content);
 
-const getCommandName = (args: string[]): string | null => {
-  const names = args.filter((x) => x !== process.execPath && x !== __filename);
-  return names[0] || null;
-};
+      switch (format) {
+        case 'typescript': {
+          console.log(TypescriptTemplateTransformer.transform(hint));
+          return;
+        }
+        case 'json-schema': {
+          console.log(JSON.stringify(JSONSchemaTransformer.transform(hint), undefined, 2))
+          return;
+        };
+        case 'hint': {
+          console.log(JSON.stringify(hint, undefined, 2));
+          return;
+        };
+      }
+    },
+  }),
+);
 
 const main = async () => {
-  const cmdName = getCommandName(process.argv);
-  if (!cmdName) {
-    console.error(`No command was specified.`);
-    return;
-  }
-  const cmd = commands[cmdName];
-
-  if (!cmd) {
-    console.error(`Command not found: ${cmdName}`);
-    return;
-  }
-
-  const args = argsToRecord(process.argv);
-
-  return await cmd.run(args);
+  await runCommand(process.argv);
 };
 
 main().catch((e) => console.error(e));

@@ -1,0 +1,1 @@
+{"version":3,"file":"transformer.d.ts","sourceRoot":"","sources":["../../../src/transformers/json-schema/transformer.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,eAAe,EAAE,MAAM,gBAAgB,CAAC;AACjD,OAAO,EAAE,UAAU,EAAE,MAAM,SAAS,CAAC;AAErC,eAAO,MAAM,qBAAqB,EAAE,eAAe,CAAC,UAAU,CA0D7D,CAAC"}
