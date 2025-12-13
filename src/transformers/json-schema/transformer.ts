@@ -11,6 +11,8 @@ export const JSONSchemaTransformer: HintTransformer<JSONSchema> = {
       switch (hint.type) {
         case "number":
           return { type: "number" };
+        case "date":
+          return { type: "string", format: "date" };
         case "string":
           return { type: "string" };
         case "boolean":

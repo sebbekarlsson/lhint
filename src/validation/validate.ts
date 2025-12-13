@@ -104,6 +104,7 @@ export const validateHint = <T extends Hint>(
       };
       // prettier-ignore
       case 'unknown': return toResult(hint, true, [...crumbs]);
+      case 'date': return toResult(hint, data instanceof Date, [...crumbs]);
     }
   }
 

@@ -3,6 +3,8 @@ import { mkPad, unique, uniqueBy, zipMin } from "./utils";
 
 export type HintMeta<IsOptional extends boolean = boolean> = {
   optional?: IsOptional;
+  description?: string;
+  name?: string;
 };
 
 export type HintBase<T, Meta extends HintMeta = HintMeta> = T & {
@@ -13,6 +15,7 @@ export type HintBase<T, Meta extends HintMeta = HintMeta> = T & {
 export type HintString = HintBase<{ type: "string" }>;
 export type HintNumber = HintBase<{ type: "number" }>;
 export type HintBoolean = HintBase<{ type: "boolean" }>;
+export type HintDate = HintBase<{ type: "date" }>;
 export type HintUndefined = HintBase<{ type: "undefined" }>;
 export type HintNull = HintBase<{ type: "null" }>;
 export type HintUnknown = HintBase<{ type: "unknown" }>;
@@ -30,6 +33,7 @@ export type Hint =
   | HintString
   | HintNumber
   | HintBoolean
+  | HintDate
   | HintUndefined
   | HintNull
   | HintUnknown
@@ -45,6 +49,7 @@ export type Unhint<T extends Hint> =
   T extends HintString ? string :
   T extends HintNumber ? number :
   T extends HintBoolean ? boolean :
+  T extends HintDate ? Date :
   T extends HintUndefined ? undefined :
   T extends HintNull ? null :
   T extends HintLiteralString ? (T extends HintLiteralString<infer V> ? V : HintLiteralString['value']) :
@@ -113,11 +118,32 @@ export namespace hints {
     };
   };
 
+  export const described = <T extends Hint>(x: T, description: string): T => {
+    return {
+      ...x,
+      _meta: {
+        ...(x._meta || {}),
+        description,
+      },
+    };
+  };
+
+  export const named = <T extends Hint>(x: T, name: string): T => {
+    return {
+      ...x,
+      _meta: {
+        ...(x._meta || {}),
+        name,
+      },
+    };
+  };
+
   export const string = (): HintString => asHint({ type: "string" });
   export const number = (): HintNumber => asHint({ type: "number" });
   export const undef = (): HintUndefined => asHint({ type: "undefined" });
   export const nil = (): HintNull => asHint({ type: "null" });
   export const boolean = (): HintBoolean => asHint({ type: "boolean" });
+  export const date = (): HintDate => asHint({ type: "date" });
 
   export function literal<T extends string>(x: T): HintLiteralString<T>;
   export function literal<T extends number>(x: T): HintLiteralNumber<T>;
@@ -167,6 +193,8 @@ export namespace hints {
             return `${x.value}`;
           case "boolean":
             return `true or false`;
+          case "date":
+            return "date";
           case "null":
             return "null";
           case "number":

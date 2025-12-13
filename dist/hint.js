@@ -42,11 +42,30 @@ var hints;
             },
         };
     };
+    hints.described = (x, description) => {
+        return {
+            ...x,
+            _meta: {
+                ...(x._meta || {}),
+                description,
+            },
+        };
+    };
+    hints.named = (x, name) => {
+        return {
+            ...x,
+            _meta: {
+                ...(x._meta || {}),
+                name,
+            },
+        };
+    };
     hints.string = () => hints.asHint({ type: "string" });
     hints.number = () => hints.asHint({ type: "number" });
     hints.undef = () => hints.asHint({ type: "undefined" });
     hints.nil = () => hints.asHint({ type: "null" });
     hints.boolean = () => hints.asHint({ type: "boolean" });
+    hints.date = () => hints.asHint({ type: "date" });
     function literal(x) {
         if (typeof x === "string")
             return hints.asHint({ type: "literal-string", value: x });
@@ -80,6 +99,8 @@ var hints;
                         return `${x.value}`;
                     case "boolean":
                         return `true or false`;
+                    case "date":
+                        return "date";
                     case "null":
                         return "null";
                     case "number":

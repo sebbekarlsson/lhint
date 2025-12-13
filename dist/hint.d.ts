@@ -1,6 +1,8 @@
 import { ToUnion } from "./typeHelpers";
 export type HintMeta<IsOptional extends boolean = boolean> = {
     optional?: IsOptional;
+    description?: string;
+    name?: string;
 };
 export type HintBase<T, Meta extends HintMeta = HintMeta> = T & {
     _meta?: Meta;
@@ -14,6 +16,9 @@ export type HintNumber = HintBase<{
 }>;
 export type HintBoolean = HintBase<{
     type: "boolean";
+}>;
+export type HintDate = HintBase<{
+    type: "date";
 }>;
 export type HintUndefined = HintBase<{
     type: "undefined";
@@ -32,7 +37,7 @@ export type HintLiteralNumber<T extends number = number> = HintBase<{
     type: "literal-number";
     value: T;
 }>;
-export type Hint = HintString | HintNumber | HintBoolean | HintUndefined | HintNull | HintUnknown | HintLiteralString | HintLiteralNumber | HintBase<{
+export type Hint = HintString | HintNumber | HintBoolean | HintDate | HintUndefined | HintNull | HintUnknown | HintLiteralString | HintLiteralNumber | HintBase<{
     type: 'union';
     of: Array<Hint>;
 }> | HintBase<{
@@ -46,7 +51,7 @@ export type Hint = HintString | HintNumber | HintBoolean | HintUndefined | HintN
     key: Hint;
     value: Hint;
 }>;
-export type Unhint<T extends Hint> = T extends HintString ? string : T extends HintNumber ? number : T extends HintBoolean ? boolean : T extends HintUndefined ? undefined : T extends HintNull ? null : T extends HintLiteralString ? (T extends HintLiteralString<infer V> ? V : HintLiteralString['value']) : T extends HintLiteralNumber ? (T extends HintLiteralNumber<infer V> ? V : HintLiteralNumber['value']) : T extends {
+export type Unhint<T extends Hint> = T extends HintString ? string : T extends HintNumber ? number : T extends HintBoolean ? boolean : T extends HintDate ? Date : T extends HintUndefined ? undefined : T extends HintNull ? null : T extends HintLiteralString ? (T extends HintLiteralString<infer V> ? V : HintLiteralString['value']) : T extends HintLiteralNumber ? (T extends HintLiteralNumber<infer V> ? V : HintLiteralNumber['value']) : T extends {
     type: 'union';
     of: infer V;
 } ? V extends Hint ? Unhint<ToUnion<V>> : never : T extends {
@@ -79,11 +84,14 @@ export declare namespace hints {
     }>;
     const optional: <T extends Hint>(x: T) => WithHintMeta<T, HintMeta<true>>;
     const setOptional: <T extends Hint, Opt extends boolean | undefined>(x: T, opt: Opt) => T;
+    const described: <T extends Hint>(x: T, description: string) => T;
+    const named: <T extends Hint>(x: T, name: string) => T;
     const string: () => HintString;
     const number: () => HintNumber;
     const undef: () => HintUndefined;
     const nil: () => HintNull;
     const boolean: () => HintBoolean;
+    const date: () => HintDate;
     function literal<T extends string>(x: T): HintLiteralString<T>;
     function literal<T extends number>(x: T): HintLiteralNumber<T>;
     const mapping: <Rec extends Record<PropertyKey, Hint>>(of: Rec) => {

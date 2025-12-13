@@ -9,6 +9,8 @@ exports.TypescriptTemplateTransformer = {
             switch (x.type) {
                 case "string":
                     return "string";
+                case "date":
+                    return "Date";
                 case "number":
                     return "number";
                 case "boolean":

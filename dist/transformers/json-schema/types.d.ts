@@ -1,5 +1,6 @@
 export type JSONSchemaPrimitive = {
     type: "string";
+    format?: "duration" | "date" | "time" | "date-time";
 } | {
     type: "integer";
 } | {

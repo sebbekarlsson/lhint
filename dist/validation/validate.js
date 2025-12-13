@@ -82,6 +82,7 @@ const validateHint = (data, hint, options = {}) => {
                 ;
             // prettier-ignore
             case 'unknown': return toResult(hint, true, [...crumbs]);
+            case 'date': return toResult(hint, data instanceof Date, [...crumbs]);
         }
     };
     const root = check(data, hint, []);

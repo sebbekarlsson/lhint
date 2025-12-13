@@ -3,6 +3,24 @@ import { hints } from "../hint";
 import { isOfHint, validateHint } from "./validate";
 
 describe("validateHint", () => {
+  it("Validates a valid date to true", () => {
+    const schema = hints.date();
+    const x = new Date();
+    const result = validateHint(x, schema);
+    console.dir(result, { depth: null });
+    assert(result.matches === true);
+    assert(isOfHint(x, schema) === true);
+  });
+
+  it("Validates a invalid date to false", () => {
+    const schema = hints.date();
+    const x = "not a date";
+    const result = validateHint(x, schema);
+    console.dir(result, { depth: null });
+    assert(result.matches === false);
+    assert(isOfHint(x, schema) === false);
+  });
+
   it("Correctly evaluates to true", () => {
     const schema = hints.mapping({
       firstname: hints.string(),
