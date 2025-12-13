@@ -54,4 +54,10 @@ describe("Hint", () => {
     assert(x.of.of.address?.of?.street?._meta?.optional === true);
     assert(x.of.of.address?._meta?.optional === true);
   });
+
+  it("Learns about the Date type", () => {
+    const date = new Date();
+    const x = hints.auto(date);
+    assert(x.type === 'date');
+  })
 });
