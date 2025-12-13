@@ -3,6 +3,26 @@ __Learn the Hints__
 
 A utility that automatically "learns" type hints from any data.
 
+## How it works
+`lhint` implements its own type hint shape,
+everyting else is just transformations between the `lhint` hint shape and other shapes.  
+An illustration because I'm bad at explaining things:
+```
+Input -> lhint -> types -> desired-output / transformation
+```
+### A more concrete example
+Let's say you're building an app and you're working with some external API for fetching weather information,  
+this API unfortunately doesn't have very good documentation.  
+You can then use `lhint` to automatically generate types, just by giving it some samples of an API endpoint:
+```typescript
+import { hints, TypescriptTemplateTransformer } from 'lhint';
+
+const req = await fetch('https://the-weather-api-foobar/api');
+const resp = await req.json(); // let's say this is an array of some unknown objects
+const typescriptTypes = TypescriptTemplateTransformer.transform(hints.auto(resp));
+console.log(typescriptTypes); // A string containing the typescript types that you can copy-paste and save somewhere.
+```
+
 ## Install
 ```
 npm install lhint
