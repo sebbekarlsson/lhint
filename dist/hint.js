@@ -71,6 +71,46 @@ var hints;
     });
     let util;
     (function (util) {
+        util.toHumanReadable = (x) => {
+            const transform = (x, padding) => {
+                switch (x.type) {
+                    case "literal-string":
+                        return `"${x.value}"`;
+                    case "literal-number":
+                        return `${x.value}`;
+                    case "boolean":
+                        return `true or false`;
+                    case "null":
+                        return "null";
+                    case "number":
+                        return "number";
+                    case "string":
+                        return "string / text";
+                    case "undefined":
+                        return "undefined / empty";
+                    case "unknown":
+                        return "unknown";
+                    case "mapping": {
+                        return [
+                            `(\n`,
+                            Object.entries(x.of)
+                                .map(([key, value], _i, arr) => {
+                                return `${(0, utils_1.mkPad)(arr.length <= 1 ? 0 : padding + 2)}${key}: ${transform(value, padding + 2)}`;
+                            })
+                                .join(",\n"),
+                            `\n${(0, utils_1.mkPad)(padding)})`,
+                        ].join("");
+                    }
+                    case "record":
+                        return `a dictionary where the key is ${transform(x.key, 0)} and the value is ${transform(x.value, 0)}`;
+                    case "array":
+                        return `array of ${transform(x.of, 0)}`;
+                    case "union":
+                        return [`any of`, x.of.map((u) => transform(u, 0)).join(", ")].join(" ");
+                }
+            };
+            return transform(x, 0);
+        };
         util.isHint = (x) => {
             if (typeof x === "undefined" || x === null)
                 return false;

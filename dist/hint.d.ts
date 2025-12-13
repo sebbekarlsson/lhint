@@ -99,6 +99,7 @@ export declare namespace hints {
     };
     const notKnown: () => HintUnknown;
     namespace util {
+        const toHumanReadable: (x: Hint) => string;
         const isHint: (x: unknown) => x is Hint;
         const isSame: (a: Hint, b: Hint) => boolean;
         const isExtending: <H extends Hint>(target: Hint, check: H) => target is Extract<Hint, {

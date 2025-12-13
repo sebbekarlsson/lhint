@@ -1,5 +1,5 @@
 import { ToUnion } from "./typeHelpers";
-import { unique, uniqueBy, zipMin } from "./utils";
+import { mkPad, unique, uniqueBy, zipMin } from "./utils";
 
 export type HintMeta<IsOptional extends boolean = boolean> = {
   optional?: IsOptional;
@@ -158,6 +158,49 @@ export namespace hints {
     });
 
   export namespace util {
+    export const toHumanReadable = (x: Hint): string => {
+      const transform = (x: Hint, padding: number): string => {
+        switch (x.type) {
+          case "literal-string":
+            return `"${x.value}"`;
+          case "literal-number":
+            return `${x.value}`;
+          case "boolean":
+            return `true or false`;
+          case "null":
+            return "null";
+          case "number":
+            return "number";
+          case "string":
+            return "string / text";
+          case "undefined":
+            return "undefined / empty";
+          case "unknown":
+            return "unknown";
+          case "mapping": {
+            return [
+              `(\n`,
+              Object.entries(x.of)
+                .map(([key, value], _i, arr) => {
+                  return `${mkPad(arr.length <= 1 ? 0 : padding + 2)}${key}: ${transform(value, padding + 2)}`;
+                })
+                .join(",\n"),
+              `\n${mkPad(padding)})`,
+            ].join("");
+          }
+          case "record":
+            return `a dictionary where the key is ${transform(x.key, 0)} and the value is ${transform(x.value, 0)}`;
+          case "array":
+            return `array of ${transform(x.of, 0)}`;
+          case "union":
+            return [`any of`, x.of.map((u) => transform(u, 0)).join(", ")].join(
+              " ",
+            );
+        }
+      };
+      return transform(x, 0);
+    };
+
     export const isHint = (x: unknown): x is Hint => {
       if (typeof x === "undefined" || x === null) return false;
       if (typeof x !== "object") return false;

@@ -74,4 +74,22 @@ describe("validateHint", () => {
 
     assert(result.matches === false);
   });
+
+  it("Correctly evaluates to false where the value is of a completely different type", () => {
+    const schema = hints.mapping({
+      firstname: hints.string(),
+      lastname: hints.string(),
+      age: hints.number(),
+      friend: hints.mapping({
+        name: hints.string(),
+      }),
+    });
+
+    const x = 51923;
+
+    const result = validateHint(x, schema);
+    console.dir(result, { depth: null });
+
+    assert(result.matches === false);
+  });
 });

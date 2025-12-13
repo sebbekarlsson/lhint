@@ -16,6 +16,8 @@ export type ValidationOptions = {
 export type MatchesHintResult_internal = {
     matches: boolean;
     crumbs: PropertyKey[];
+    message: string;
+    path: string;
 };
 export type MatchesHintResult = {
     matches: boolean;

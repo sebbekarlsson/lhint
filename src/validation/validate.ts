@@ -25,6 +25,8 @@ export type ValidationOptions = {
 export type MatchesHintResult_internal = {
   matches: boolean;
   crumbs: PropertyKey[];
+  message: string;
+  path: string;
 }
 
 // prettier-ignore
@@ -43,59 +45,65 @@ export const validateHint = <T extends Hint>(
 
   // prettier-ignore
   const check = <T extends Hint>(data: unknown, hint: T, crumbs: PropertyKey[]): MatchesHintResult_internal => {
-    const toResult = (x: boolean, crumbs: PropertyKey[]): MatchesHintResult_internal => {
-      const r: MatchesHintResult_internal = ({ matches: x, crumbs });
+    const toResult = (hint: Hint, x: boolean, crumbs: PropertyKey[], message?: string): MatchesHintResult_internal => {
+      const makeMessage = (): string => {
+        if (x === true) return 'ok';
+        const rhs = hints.util.toHumanReadable(hint);
+        return `did not match: ${rhs}`;
+      }
+      
+      const r: MatchesHintResult_internal = ({ matches: x, crumbs, message: message || makeMessage(), path:  crumbs.join('.') });
       results.push(r);
       return r;
     }
     // prettier-ignore
     switch (hint.type) {
-      case 'string': return toResult(typeof data === 'string', [...crumbs]);
-      case 'number': return toResult(typeof data === 'number', [...crumbs]);
-      case 'boolean': return toResult(typeof data === 'boolean', [...crumbs]);
-      case 'undefined': return toResult(typeof data === 'undefined', [...crumbs]);
-      case 'null': return toResult(typeof data === null, [...crumbs]);
-      case 'literal-string': return toResult(data === hint.value, [...crumbs]);
-      case 'literal-number': return toResult(data === hint.value, [...crumbs]);
+      case 'string': return toResult(hint, typeof data === 'string', [...crumbs]);
+      case 'number': return toResult(hint, typeof data === 'number', [...crumbs]);
+      case 'boolean': return toResult(hint, typeof data === 'boolean', [...crumbs]);
+      case 'undefined': return toResult(hint, typeof data === 'undefined', [...crumbs]);
+      case 'null': return toResult(hint, typeof data === null, [...crumbs]);
+      case 'literal-string': return toResult(hint, data === hint.value, [...crumbs]);
+      case 'literal-number': return toResult(hint, data === hint.value, [...crumbs]);
       case 'array': {
-        if (!Array.isArray(data)) return toResult(false, [...crumbs]);
-        return toResult(data.every((x, i) => check(x, hint.of, [...crumbs, i]).matches), [...crumbs]);
+        if (!Array.isArray(data)) return toResult(hint, false, [...crumbs]);
+        return toResult(hint, data.every((x, i) => check(x, hint.of, [...crumbs, i]).matches), [...crumbs]);
       };
       // prettier-ignore
       case 'record': {
-        if (typeof data === 'undefined' || data === null) return toResult(false, [...crumbs]);
-        if (typeof data !== 'object') return toResult(false, [...crumbs]);
+        if (typeof data === 'undefined' || data === null) return toResult(hint, false, [...crumbs]);
+        if (typeof data !== 'object') return toResult(hint, false, [...crumbs]);
         const keys = Object.keys(data);
         const values = Object.values(data);
-        return toResult(keys.every((x, i) => check(x, hint.key, [...crumbs, i]).matches) && values.every((x, i) => check(x, hint.value, [...crumbs, i]).matches), [...crumbs]);
+        return toResult(hint, keys.every((x, i) => check(x, hint.key, [...crumbs, i]).matches) && values.every((x, i) => check(x, hint.value, [...crumbs, i]).matches), [...crumbs]);
       };
       // prettier-ignore
       case 'mapping': {
-        if (typeof data === 'undefined' || data === null) return toResult(false, [...crumbs]);
-        if (typeof data !== 'object') return toResult(false, [...crumbs]);
+        if (typeof data === 'undefined' || data === null) return toResult(hint, false, [...crumbs]);
+        if (typeof data !== 'object') return toResult(hint, false, [...crumbs]);
 
         for (const [key, value] of Object.entries(data)) {
           const valueHint = hint.of[key];
-          if (!valueHint && !options.allowExtraProperties) return toResult(false, [...crumbs, key]);
+          if (!valueHint && !options.allowExtraProperties) return toResult(hint, false, [...crumbs, key]);
           if (!valueHint) continue;
-          if (!check(value, valueHint, [...crumbs, key])) return toResult(false, [...crumbs, key]);
+          if (!check(value, valueHint, [...crumbs, key])) return toResult(valueHint, false, [...crumbs, key]);
         }
 
         for (const [key, valueHint] of Object.entries(hint.of)) {
           const isOpt = hints.util.isOptional(valueHint)
-          if (!isOpt && !(key in data)) return toResult(false, [...crumbs, key]);
+          if (!isOpt && !(key in data)) return toResult(valueHint, false, [...crumbs, key]);
           if (isOpt && !(key in data)) continue;
-          if (!check((data as Record<string, unknown>)[key], valueHint, [...crumbs, key])) toResult(false, [...crumbs, key]);
+          if (!check((data as Record<string, unknown>)[key], valueHint, [...crumbs, key])) return toResult(valueHint, false, [...crumbs, key]);
         }
         
-        return toResult(true, [...crumbs]);
+        return toResult(hint, true, [...crumbs]);
       };
       // prettier-ignore
       case 'union': {
-        return toResult(hint.of.some((x, i) => check(data, x, [...crumbs, i]).matches), [...crumbs]);
+        return toResult(hint, hint.of.some((x, i) => check(data, x, [...crumbs, i]).matches), [...crumbs]);
       };
       // prettier-ignore
-      case 'unknown': return toResult(true, [...crumbs]);
+      case 'unknown': return toResult(hint, true, [...crumbs]);
     }
   }
 
