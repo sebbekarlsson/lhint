@@ -1,4 +1,4 @@
-import { ToUnion } from "./typeHelpers";
+import { DeUnion, ToUnion } from "./typeHelpers";
 export type HintMeta<IsOptional extends boolean = boolean> = {
     optional?: IsOptional;
     description?: string;
@@ -51,6 +51,9 @@ export type Hint = HintString | HintNumber | HintBoolean | HintDate | HintUndefi
     key: Hint;
     value: Hint;
 }>;
+export type MetaOfHint<T extends HintBase<unknown, HintMeta>> = T extends HintBase<infer _x, infer M> ? M : never;
+export type PropOfHintMeta<T extends HintBase<unknown, HintMeta>, K extends keyof HintMeta> = MetaOfHint<T>[K];
+export type HintIsOptional<T extends HintBase<unknown, HintMeta>> = Exclude<MetaOfHint<T>["optional"], undefined> extends true ? true : false;
 export type Unhint<T extends Hint> = T extends HintString ? string : T extends HintNumber ? number : T extends HintBoolean ? boolean : T extends HintDate ? Date : T extends HintUndefined ? undefined : T extends HintNull ? null : T extends HintLiteralString ? (T extends HintLiteralString<infer V> ? V : HintLiteralString['value']) : T extends HintLiteralNumber ? (T extends HintLiteralNumber<infer V> ? V : HintLiteralNumber['value']) : T extends {
     type: 'union';
     of: infer V;
@@ -60,9 +63,11 @@ export type Unhint<T extends Hint> = T extends HintString ? string : T extends H
 } ? V extends Hint ? Array<Unhint<V>> : never : T extends {
     type: 'mapping';
     of: infer V;
-} ? (V extends Record<infer _K, infer _J> ? {
-    [Prop in keyof V]: V[Prop] extends Hint ? Unhint<V[Prop]> : never;
-} : never) : T extends {
+} ? (V extends Record<infer _K, infer _J> ? (DeUnion<{
+    [Prop in keyof V as V[Prop] extends Hint ? HintIsOptional<V[Prop]> extends true ? never : Prop : never]: V[Prop] extends Hint ? Unhint<V[Prop]> : never;
+}, {
+    [Prop in keyof V as V[Prop] extends Hint ? HintIsOptional<V[Prop]> extends false ? never : Prop : never]?: V[Prop] extends Hint ? Unhint<V[Prop]> : never;
+}>) : never) : T extends {
     type: 'record';
     key: infer K;
     value: infer J;

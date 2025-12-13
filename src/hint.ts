@@ -1,4 +1,4 @@
-import { ToUnion } from "./typeHelpers";
+import { DeUnion, ToUnion } from "./typeHelpers";
 import { mkPad, unique, uniqueBy, zipMin } from "./utils";
 
 export type HintMeta<IsOptional extends boolean = boolean> = {
@@ -44,6 +44,17 @@ export type Hint =
   | HintBase<{ type: 'mapping', of : Record<PropertyKey, Hint> }>
   | HintBase<{ type: 'record', key: Hint, value: Hint }>
 
+export type MetaOfHint<T extends HintBase<unknown, HintMeta>> =
+  T extends HintBase<infer _x, infer M> ? M : never;
+
+export type PropOfHintMeta<
+  T extends HintBase<unknown, HintMeta>,
+  K extends keyof HintMeta,
+> = MetaOfHint<T>[K];
+
+export type HintIsOptional<T extends HintBase<unknown, HintMeta>> =
+  Exclude<MetaOfHint<T>["optional"], undefined> extends true ? true : false;
+
 // prettier-ignore
 export type Unhint<T extends Hint> =
   T extends HintString ? string :
@@ -56,9 +67,19 @@ export type Unhint<T extends Hint> =
   T extends HintLiteralNumber ? (T extends HintLiteralNumber<infer V> ? V : HintLiteralNumber['value']) :
   T extends { type: 'union', of: infer V } ? V extends Hint ? Unhint<ToUnion<V>> : never : 
   T extends { type: 'array', of: infer V } ? V extends Hint ? Array<Unhint<V>> : never : 
-  T extends { type: 'mapping', of: infer V } ? (V extends Record<infer _K, infer _J> ? {[Prop in keyof V]: V[Prop] extends Hint ? Unhint<V[Prop]> : never} : never) : 
-  T extends { type: 'record', key: infer K, value: infer J } ? K extends Hint ? J extends Hint ? Record<Unhint<K> extends infer G ? G extends string ? G : never : never, Unhint<J>> : never : never :    //? (Unhint<K> extends PropertyKey ? Record<Unhint<K>, Unhint<J>>  : never) : 
-  //T extends { type: 'record', key: infer K, value: infer J }  ? (Unhint<K> extends PropertyKey ? Record<Unhint<K>, Unhint<J>>  : never) : 
+  T extends { type: 'mapping', of: infer V } ? (
+    V extends Record<infer _K, infer _J> ? (
+      DeUnion<
+      {
+        [Prop in keyof V as V[Prop] extends Hint ? HintIsOptional<V[Prop]> extends true ? never : Prop : never]: V[Prop] extends Hint ? Unhint<V[Prop]> : never
+      },
+      {
+        [Prop in keyof V as V[Prop] extends Hint ? HintIsOptional<V[Prop]> extends false ? never : Prop : never]?: V[Prop] extends Hint ? Unhint<V[Prop]> : never
+      }
+      >
+    ) : never
+  ) : 
+  T extends { type: 'record', key: infer K, value: infer J } ? K extends Hint ? J extends Hint ? Record<Unhint<K> extends infer G ? G extends string ? G : never : never, Unhint<J>> : never : never :
   T extends { type: 'unknown' } ? unknown : 
   never
 
@@ -400,7 +421,10 @@ export namespace hints {
   };
 }
 
-//const x = hints.record(hints.literal('hello'), hints.number());
-//const y = hints.mapping({ x: hints.number(), y: hints.number() });
-////
-//const w: Unhint<typeof y>
+////const x = hints.record(hints.literal('hello'), hints.number());
+//const y = hints.mapping({
+//  x: hints.optional(hints.number()),
+//  y: hints.number(),
+//});
+//////
+//const w: Unhint<typeof y>;

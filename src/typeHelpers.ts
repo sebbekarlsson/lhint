@@ -15,3 +15,7 @@ export type Tuple3<A = unknown, B = unknown, C = unknown> = [A, B, C];
 export type IfExtends<Thing, Conds extends Tuple2[]> = {
   [Prop in keyof Conds]: Thing extends Conds[Prop][0] ? Conds[Prop][1] : never;
 }[keyof Conds];
+
+export type DeUnion<A, B> = A & B extends infer G
+  ? { [Prop in keyof G]: G[Prop] }
+  : never;
