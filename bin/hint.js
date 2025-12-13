@@ -302,6 +302,8 @@ var hints;
                 return hints.boolean();
             if (typeof x === "undefined")
                 return hints.undef();
+            if (x instanceof Date)
+                return hints.date();
             if (x === null)
                 return hints.nil();
             if (Array.isArray(x)) {

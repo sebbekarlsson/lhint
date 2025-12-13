@@ -115,7 +115,7 @@ export namespace hints {
 
   export const union = <Of extends Array<Hint>>(
     of: Of,
-  ): { type: 'union'; of: Of, _hint: true } => {
+  ): { type: "union"; of: Of; _hint: true } => {
     return asHint({
       type: "union",
       of: uniqueBy(of, (x) => JSON.stringify(x)),

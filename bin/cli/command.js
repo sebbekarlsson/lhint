@@ -54,7 +54,7 @@ const registerCommand = (cmd) => {
 };
 exports.registerCommand = registerCommand;
 const getCommandName = (args) => {
-    const names = args.filter((x) => x !== process.execPath && x !== __filename && !x.startsWith('/'));
+    const names = args.filter((x) => x !== process.execPath && x !== __filename && !x.startsWith("/"));
     return names[0] || null;
 };
 exports.getCommandName = getCommandName;

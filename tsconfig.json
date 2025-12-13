@@ -20,5 +20,6 @@
     "paths": {
       "#/mock/*": ["./mock/*"]
     }
-  } 
+  },
+  "exclude": ["./dist/", "./bin/"]
 }

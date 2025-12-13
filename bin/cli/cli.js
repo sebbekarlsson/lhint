@@ -41,31 +41,27 @@ const getContent = async (path) => {
     hint: hint_1.hints.mapping({
         source: hint_1.hints.string(),
         format: hint_1.hints.union([
-            hint_1.hints.literal('typescript'),
-            hint_1.hints.literal('json-schema'),
-            hint_1.hints.literal('hint'),
-        ])
+            hint_1.hints.literal("typescript"),
+            hint_1.hints.literal("json-schema"),
+            hint_1.hints.literal("hint"),
+        ]),
     }),
     fn: async ({ source, format }) => {
         const content = await getContent(source);
         const hint = hint_1.hints.auto(content);
         switch (format) {
-            case 'typescript': {
+            case "typescript": {
                 console.log(transformers_1.TypescriptTemplateTransformer.transform(hint));
                 return;
             }
-            case 'json-schema':
-                {
-                    console.log(JSON.stringify(transformers_1.JSONSchemaTransformer.transform(hint), undefined, 2));
-                    return;
-                }
-                ;
-            case 'hint':
-                {
-                    console.log(JSON.stringify(hint, undefined, 2));
-                    return;
-                }
-                ;
+            case "json-schema": {
+                console.log(JSON.stringify(transformers_1.JSONSchemaTransformer.transform(hint), undefined, 2));
+                return;
+            }
+            case "hint": {
+                console.log(JSON.stringify(hint, undefined, 2));
+                return;
+            }
         }
     },
 }));

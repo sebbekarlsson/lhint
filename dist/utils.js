@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mkPad = exports.range = exports.groupBy = exports.zipMax = exports.zipMin = exports.unique = exports.uniqueBy = void 0;
+exports.isPlainObject = exports.mkPad = exports.range = exports.groupBy = exports.zipMax = exports.zipMin = exports.unique = exports.uniqueBy = void 0;
 const uniqueBy = (arr, key) => {
     const seen = new Set();
     return arr.filter((x) => {
@@ -51,4 +51,8 @@ const mkPad = (n, p = " ") => n <= 0
         .map(() => p)
         .join("");
 exports.mkPad = mkPad;
+const isPlainObject = (x) => x !== null &&
+    typeof x === "object" &&
+    Object.getPrototypeOf(x) === Object.prototype;
+exports.isPlainObject = isPlainObject;
 //# sourceMappingURL=utils.js.map

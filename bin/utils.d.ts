@@ -6,4 +6,5 @@ export type GetKey<T, K extends PropertyKey = PropertyKey> = (item: T) => K;
 export declare const groupBy: <Get extends GetKey<any>, T = Get extends GetKey<infer X> ? X : any, Key = Get extends GetKey<T, infer K> ? K : PropertyKey, Result = Key extends PropertyKey ? Record<Key, T[]> : Record<PropertyKey, unknown[]>>(items: T[], key: Get) => Result;
 export declare const range: (n: number) => number[];
 export declare const mkPad: (n: number, p?: string) => string;
+export declare const isPlainObject: (x: unknown) => x is Record<PropertyKey, unknown>;
 //# sourceMappingURL=utils.d.ts.map

@@ -58,6 +58,6 @@ describe("Hint", () => {
   it("Learns about the Date type", () => {
     const date = new Date();
     const x = hints.auto(date);
-    assert(x.type === 'date');
-  })
+    assert(x.type === "date");
+  });
 });

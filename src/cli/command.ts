@@ -13,7 +13,9 @@ const removePrefixes = (x: string, prefixes: string[]): string => {
   return x;
 };
 
-export const argsToRecord = (args: string[]): Record<string, string | boolean> => {
+export const argsToRecord = (
+  args: string[],
+): Record<string, string | boolean> => {
   const rec: Record<string, string | boolean> = {};
   for (let i = 0; i < args.length; i++) {
     const key = args[i]!;
@@ -67,10 +69,12 @@ export const commands: Record<string, RunnableCommand<HintMapping>> = {};
 
 export const registerCommand = (cmd: RunnableCommand<HintMapping>): void => {
   commands[cmd.name] = cmd;
-}
+};
 
 export const getCommandName = (args: string[]): string | null => {
-  const names = args.filter((x) => x !== process.execPath && x !== __filename && !x.startsWith('/'));
+  const names = args.filter(
+    (x) => x !== process.execPath && x !== __filename && !x.startsWith("/"),
+  );
   return names[0] || null;
 };
 
@@ -88,4 +92,4 @@ export const runCommand = async (args: string[]): Promise<void> => {
   }
 
   return await cmd.run(argsToRecord(args));
-}
+};

@@ -74,3 +74,8 @@ export const mkPad = (n: number, p: string = " "): string =>
     : range(n)
         .map(() => p)
         .join("");
+
+export const isPlainObject = (x: unknown): x is Record<PropertyKey, unknown> =>
+  x !== null &&
+  typeof x === "object" &&
+  Object.getPrototypeOf(x) === Object.prototype;
