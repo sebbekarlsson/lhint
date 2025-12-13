@@ -1,6 +1,6 @@
 import { assert, describe, it } from "vitest";
 import { hints } from "../hint";
-import { isOfHint, validateHint } from "./validate";
+import { isOfHint, validate, validateHint } from "./validate";
 
 describe("validateHint", () => {
   it("Validates a valid date to true", () => {
@@ -109,5 +109,48 @@ describe("validateHint", () => {
     console.dir(result, { depth: null });
 
     assert(result.matches === false);
+  });
+
+  it("Correctly validates a union", () => {
+    const schema = hints.union([hints.date(), hints.number()]);
+
+    const result = validate(123, schema);
+    assert(
+      result.ok === true,
+      result.ok === true ? "ok" : result.error.summary,
+    );
+  });
+
+  it("Correctly invalidates a union", () => {
+    const schema = hints.union([hints.date(), hints.number()]);
+
+    const result = validate("not valid", schema);
+    assert(
+      result.ok === false,
+      result.ok === true ? "ok" : result.error.summary,
+    );
+  });
+
+  it("Correctly validates a coerced type", () => {
+    const schema = hints.coerced(hints.number(), (x) =>
+      typeof x === "string" ? Number(x) : x,
+    );
+    const result = validate("123", schema);
+    assert(
+      result.ok === true,
+      result.ok === true ? "ok" : result.error.summary,
+    );
+    assert(result.value === 123);
+  });
+
+  it("Correctly invalidates a coerced type", () => {
+    const schema = hints.coerced(hints.number(), (x) =>
+      typeof x === "string" ? Number(x) : x,
+    );
+    const result = validate(new Date(), schema);
+    assert(
+      result.ok === false,
+      result.ok === true ? "ok" : result.error.summary,
+    );
   });
 });

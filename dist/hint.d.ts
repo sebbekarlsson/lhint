@@ -1,8 +1,10 @@
 import { DeUnion, ToUnion } from "./typeHelpers";
-export type HintMeta<IsOptional extends boolean = boolean> = {
+export type HintCoerceFun = (x: unknown) => unknown;
+export type HintMeta<IsOptional extends boolean = boolean, CoerceFn extends HintCoerceFun = HintCoerceFun> = {
     optional?: IsOptional;
     description?: string;
     name?: string;
+    coerce?: CoerceFn;
 };
 export type HintBase<T, Meta extends HintMeta = HintMeta> = T & {
     _meta?: Meta;
@@ -51,6 +53,12 @@ export type Hint = HintString | HintNumber | HintBoolean | HintDate | HintUndefi
     key: Hint;
     value: Hint;
 }>;
+export type HintArray = Extract<Hint, {
+    type: "array";
+}>;
+export type HintMapping = Extract<Hint, {
+    type: "mapping";
+}>;
 export type MetaOfHint<T extends HintBase<unknown, HintMeta>> = T extends HintBase<infer _x, infer M> ? M : never;
 export type PropOfHintMeta<T extends HintBase<unknown, HintMeta>, K extends keyof HintMeta> = MetaOfHint<T>[K];
 export type HintIsOptional<T extends HintBase<unknown, HintMeta>> = Exclude<MetaOfHint<T>["optional"], undefined> extends true ? true : false;
@@ -91,6 +99,7 @@ export declare namespace hints {
     const setOptional: <T extends Hint, Opt extends boolean | undefined>(x: T, opt: Opt) => T;
     const described: <T extends Hint>(x: T, description: string) => T;
     const named: <T extends Hint>(x: T, name: string) => T;
+    const coerced: <T extends Hint>(x: T, fn: HintCoerceFun) => T;
     const string: () => HintString;
     const number: () => HintNumber;
     const undef: () => HintUndefined;
@@ -112,6 +121,8 @@ export declare namespace hints {
     };
     const notKnown: () => HintUnknown;
     namespace util {
+        const coerce: <T extends Hint>(x: unknown, hint: T) => unknown;
+        const coerceDeep: <T extends Hint>(x: unknown, hint: T) => unknown;
         const toHumanReadable: (x: Hint) => string;
         const isHint: (x: unknown) => x is Hint;
         const isSame: (a: Hint, b: Hint) => boolean;

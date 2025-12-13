@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isOfHint = exports.validateHint = void 0;
+exports.validate = exports.isOfHint = exports.validateHint = void 0;
 const hint_1 = require("../hint");
 const utils_1 = require("../utils");
-const validateHint = (data, hint, options = {}) => {
+const validateHint = (dataToCheck, hint, options = {}) => {
+    const coerced = hint_1.hints.util.coerceDeep(dataToCheck, hint);
     const results = [];
     // prettier-ignore
-    const check = (data, hint, crumbs) => {
+    const check = (data, hint, crumbs, emit = true) => {
         const toResult = (hint, x, crumbs, message) => {
             const makeMessage = () => {
                 if (x === true)
@@ -15,7 +16,9 @@ const validateHint = (data, hint, options = {}) => {
                 return `did not match: ${rhs}`;
             };
             const r = ({ matches: x, crumbs, message: message || makeMessage(), path: crumbs.join('.') });
-            results.push(r);
+            if (emit) {
+                results.push(r);
+            }
             return r;
         };
         // prettier-ignore
@@ -65,7 +68,7 @@ const validateHint = (data, hint, options = {}) => {
                     for (const [key, valueHint] of Object.entries(hint.of)) {
                         const isOpt = hint_1.hints.util.isOptional(valueHint);
                         if (!isOpt && !(key in data))
-                            return toResult(valueHint, false, [...crumbs, key]);
+                            return toResult(valueHint, false, [...crumbs, key], `Missing property: ${key}`);
                         if (isOpt && !(key in data))
                             continue;
                         if (!check(data[key], valueHint, [...crumbs, key]))
@@ -77,7 +80,13 @@ const validateHint = (data, hint, options = {}) => {
             // prettier-ignore
             case 'union':
                 {
-                    return toResult(hint, hint.of.some((x, i) => check(data, x, [...crumbs, i]).matches), [...crumbs]);
+                    const checks = hint.of.map((x, i) => check(data, x, [...crumbs, i], false));
+                    if (checks.some(x => x.matches))
+                        return toResult(hint, true, [...crumbs]);
+                    const err = checks.find(x => !x.matches);
+                    if (err)
+                        return err;
+                    return toResult(hint, false, [...crumbs]);
                 }
                 ;
             // prettier-ignore
@@ -85,14 +94,38 @@ const validateHint = (data, hint, options = {}) => {
             case 'date': return toResult(hint, data instanceof Date, [...crumbs]);
         }
     };
-    const root = check(data, hint, []);
+    const root = check(coerced, hint, []);
+    const summary = [
+        ...results
+            .filter((r) => r.matches === false)
+            .map((r) => {
+            return `${r.path}: ${r.message}`;
+        }),
+    ]
+        .join("\n")
+        .trim() || "ok";
     return {
         ...root,
         matches: root.matches && results.every((x) => x.matches),
         stack: (0, utils_1.uniqueBy)(results.toSorted((a, b) => Number(a.matches) - Number(b.matches)), (x) => x.crumbs.toSorted().join("-")),
+        summary: summary,
+        value: coerced,
     };
 };
 exports.validateHint = validateHint;
-const isOfHint = (x, hint) => (0, exports.validateHint)(x, hint).matches;
+const isOfHint = (x, hint, options = {}) => (0, exports.validateHint)(x, hint, options).matches;
 exports.isOfHint = isOfHint;
+const validate = (x, hint, options = {}) => {
+    const result = (0, exports.validateHint)(x, hint, options);
+    if (!result.matches)
+        return {
+            ok: false,
+            error: result,
+        };
+    return {
+        ok: true,
+        value: result.value,
+    };
+};
+exports.validate = validate;
 //# sourceMappingURL=validate.js.map

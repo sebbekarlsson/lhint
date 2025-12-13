@@ -60,6 +60,15 @@ var hints;
             },
         };
     };
+    hints.coerced = (x, fn) => {
+        return {
+            ...x,
+            _meta: {
+                ...(x._meta || {}),
+                coerce: fn,
+            },
+        };
+    };
     hints.string = () => hints.asHint({ type: "string" });
     hints.number = () => hints.asHint({ type: "number" });
     hints.undef = () => hints.asHint({ type: "undefined" });
@@ -90,6 +99,37 @@ var hints;
     });
     let util;
     (function (util) {
+        util.coerce = (x, hint) => {
+            const fn = hint._meta?.coerce;
+            if (!fn)
+                return x;
+            return fn(x);
+        };
+        util.coerceDeep = (x, hint) => {
+            const data = util.coerce(x, hint);
+            switch (hint.type) {
+                case "array": {
+                    if (Array.isArray(data)) {
+                        return data.map((d) => util.coerce(d, hint.of));
+                    }
+                    return data;
+                }
+                case "mapping": {
+                    if (data === null || typeof data !== "object" || Array.isArray(data))
+                        return data;
+                    const rec = { ...data };
+                    for (const [k, v] of Object.entries(data)) {
+                        const vHint = hint.of[k];
+                        if (!vHint)
+                            continue;
+                        rec[k] = util.coerce(v, vHint);
+                    }
+                    return rec;
+                }
+                default:
+                    return data;
+            }
+        };
         util.toHumanReadable = (x) => {
             const transform = (x, padding) => {
                 switch (x.type) {

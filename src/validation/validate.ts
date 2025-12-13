@@ -2,18 +2,12 @@ import { Hint, hints, Unhint } from "../hint";
 import { uniqueBy } from "../utils";
 
 // prettier-ignore
-export type ValidationError = {
-  path: PropertyKey[];
-  message: string;
-};
-
-// prettier-ignore
 export type ValidationResult<T extends Hint> = {
   ok: true,
   value: Unhint<T>,
 } | {
   ok: false,
-  error: ValidationError;
+  error: MatchesHintResult;
 };
 
 // prettier-ignore
@@ -34,17 +28,21 @@ export type MatchesHintResult = {
   matches: boolean;
   crumbs: PropertyKey[];
   stack: MatchesHintResult_internal[];
+  summary: string;
+  value: unknown;
 }
 
 export const validateHint = <T extends Hint>(
-  data: unknown,
+  dataToCheck: unknown,
   hint: T,
   options: ValidationOptions = {},
 ): MatchesHintResult => {
+  const coerced = hints.util.coerceDeep(dataToCheck, hint);
   const results: MatchesHintResult_internal[] = [];
 
   // prettier-ignore
-  const check = <T extends Hint>(data: unknown, hint: T, crumbs: PropertyKey[]): MatchesHintResult_internal => {
+  const check = <T extends Hint>(data: unknown, hint: T, crumbs: PropertyKey[], emit: boolean = true): MatchesHintResult_internal => {
+    
     const toResult = (hint: Hint, x: boolean, crumbs: PropertyKey[], message?: string): MatchesHintResult_internal => {
       const makeMessage = (): string => {
         if (x === true) return 'ok';
@@ -53,7 +51,9 @@ export const validateHint = <T extends Hint>(
       }
       
       const r: MatchesHintResult_internal = ({ matches: x, crumbs, message: message || makeMessage(), path:  crumbs.join('.') });
-      results.push(r);
+      if (emit) {
+        results.push(r);
+      }
       return r;
     }
     // prettier-ignore
@@ -91,7 +91,7 @@ export const validateHint = <T extends Hint>(
 
         for (const [key, valueHint] of Object.entries(hint.of)) {
           const isOpt = hints.util.isOptional(valueHint)
-          if (!isOpt && !(key in data)) return toResult(valueHint, false, [...crumbs, key]);
+          if (!isOpt && !(key in data)) return toResult(valueHint, false, [...crumbs, key], `Missing property: ${key}`);
           if (isOpt && !(key in data)) continue;
           if (!check((data as Record<string, unknown>)[key], valueHint, [...crumbs, key])) return toResult(valueHint, false, [...crumbs, key]);
         }
@@ -100,7 +100,12 @@ export const validateHint = <T extends Hint>(
       };
       // prettier-ignore
       case 'union': {
-        return toResult(hint, hint.of.some((x, i) => check(data, x, [...crumbs, i]).matches), [...crumbs]);
+        const checks = hint.of.map((x, i) => check(data, x, [...crumbs, i], false));
+        if (checks.some(x => x.matches)) return toResult(hint, true, [...crumbs]);
+        const err = checks.find(x => !x.matches);
+        if (err) return err;
+        
+        return toResult(hint, false, [...crumbs]);
       };
       // prettier-ignore
       case 'unknown': return toResult(hint, true, [...crumbs]);
@@ -108,7 +113,18 @@ export const validateHint = <T extends Hint>(
     }
   }
 
-  const root = check(data, hint, []);
+  const root = check(coerced, hint, []);
+
+  const summary: string =
+    [
+      ...results
+        .filter((r) => r.matches === false)
+        .map((r) => {
+          return `${r.path}: ${r.message}`;
+        }),
+    ]
+      .join("\n")
+      .trim() || "ok";
 
   return {
     ...root,
@@ -117,8 +133,31 @@ export const validateHint = <T extends Hint>(
       results.toSorted((a, b) => Number(a.matches) - Number(b.matches)),
       (x) => x.crumbs.toSorted().join("-"),
     ),
+    summary: summary,
+    value: coerced,
   };
 };
 
-export const isOfHint = <T extends Hint>(x: unknown, hint: T): x is Unhint<T> =>
-  validateHint(x, hint).matches;
+export const isOfHint = <T extends Hint>(
+  x: unknown,
+  hint: T,
+  options: ValidationOptions = {},
+): x is Unhint<T> => validateHint(x, hint, options).matches;
+
+export const validate = <T extends Hint>(
+  x: unknown,
+  hint: T,
+  options: ValidationOptions = {},
+): ValidationResult<T> => {
+  const result = validateHint(x, hint, options);
+  if (!result.matches)
+    return {
+      ok: false,
+      error: result,
+    };
+
+  return {
+    ok: true,
+    value: result.value as Unhint<T>,
+  };
+};

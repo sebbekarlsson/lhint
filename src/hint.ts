@@ -1,10 +1,16 @@
 import { DeUnion, ToUnion } from "./typeHelpers";
 import { mkPad, unique, uniqueBy, zipMin } from "./utils";
 
-export type HintMeta<IsOptional extends boolean = boolean> = {
+export type HintCoerceFun = (x: unknown) => unknown;
+
+export type HintMeta<
+  IsOptional extends boolean = boolean,
+  CoerceFn extends HintCoerceFun = HintCoerceFun,
+> = {
   optional?: IsOptional;
   description?: string;
   name?: string;
+  coerce?: CoerceFn;
 };
 
 export type HintBase<T, Meta extends HintMeta = HintMeta> = T & {
@@ -43,6 +49,9 @@ export type Hint =
   | HintBase<{ type: 'array', of : Hint }>
   | HintBase<{ type: 'mapping', of : Record<PropertyKey, Hint> }>
   | HintBase<{ type: 'record', key: Hint, value: Hint }>
+
+export type HintArray = Extract<Hint, { type: "array" }>;
+export type HintMapping = Extract<Hint, { type: "mapping" }>;
 
 export type MetaOfHint<T extends HintBase<unknown, HintMeta>> =
   T extends HintBase<infer _x, infer M> ? M : never;
@@ -159,6 +168,16 @@ export namespace hints {
     };
   };
 
+  export const coerced = <T extends Hint>(x: T, fn: HintCoerceFun): T => {
+    return {
+      ...x,
+      _meta: {
+        ...(x._meta || {}),
+        coerce: fn,
+      },
+    };
+  };
+
   export const string = (): HintString => asHint({ type: "string" });
   export const number = (): HintNumber => asHint({ type: "number" });
   export const undef = (): HintUndefined => asHint({ type: "undefined" });
@@ -205,6 +224,40 @@ export namespace hints {
     });
 
   export namespace util {
+    export const coerce = <T extends Hint>(x: unknown, hint: T): unknown => {
+      const fn = hint._meta?.coerce;
+      if (!fn) return x;
+      return fn(x);
+    };
+
+    export const coerceDeep = <T extends Hint>(
+      x: unknown,
+      hint: T,
+    ): unknown => {
+      const data = coerce(x, hint);
+      switch (hint.type) {
+        case "array": {
+          if (Array.isArray(data)) {
+            return data.map((d) => coerce(d, hint.of));
+          }
+          return data;
+        }
+        case "mapping": {
+          if (data === null || typeof data !== "object" || Array.isArray(data))
+            return data;
+          const rec = { ...(data as Record<string, unknown>) };
+          for (const [k, v] of Object.entries(data)) {
+            const vHint = hint.of[k];
+            if (!vHint) continue;
+            rec[k] = coerce(v, vHint);
+          }
+          return rec;
+        }
+        default:
+          return data;
+      }
+    };
+
     export const toHumanReadable = (x: Hint): string => {
       const transform = (x: Hint, padding: number): string => {
         switch (x.type) {
