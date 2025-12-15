@@ -44,6 +44,7 @@ describe("Hint", () => {
   it("Learns unions from list of objects", () => {
     const x = hints.auto(people);
 
+    console.dir(x, { depth: null });
     assert(x.type === "array");
     assert(x.of.type === "mapping");
     assert(x.of.of.firstname?.type === "string");
@@ -59,5 +60,96 @@ describe("Hint", () => {
     const date = new Date();
     const x = hints.auto(date);
     assert(x.type === "date");
+  });
+
+  it("Refines unions", () => {
+    type Thing = {
+      name: string;
+      price?: {
+        value: number;
+        currency?: string;
+      };
+      categories: string[];
+      variants: Array<{ type: string; value: string }>;
+      children?: (Thing | string)[];
+    };
+
+    const things: Thing[] = [
+      {
+        name: "a",
+        categories: ["fun", "cool"],
+        variants: [
+          { type: "color", value: "red" },
+          { type: "color", value: "green" },
+        ],
+        price: {
+          value: 50,
+          currency: "USD",
+        },
+        children: [
+          {
+            name: "z",
+            categories: ["art"],
+            variants: [{ type: "color", value: "brown" }],
+            price: {
+              value: 30.3,
+              currency: "SEK",
+            },
+          },
+        ],
+      },
+      {
+        name: "b",
+        categories: ["sad"],
+        variants: [
+          { type: "size", value: "medium" },
+          { type: "size", value: "large" },
+          { type: "color", value: "purple" },
+        ],
+        children: [
+          {
+            name: "c",
+            categories: ["science", "gaming"],
+            variants: [{ type: "color", value: "blue" }],
+            price: {
+              value: 10,
+              currency: "SEK",
+            },
+          },
+        ],
+      },
+      {
+        name: "d",
+        categories: ["fiction"],
+        variants: [
+          { type: "size", value: "medium" },
+          { type: "size", value: "large" },
+          { type: "color", value: "orange" },
+        ],
+        price: {
+          value: 50,
+        },
+        children: [
+          {
+            name: "e",
+            categories: ["story"],
+            variants: [{ type: "size", value: "x-large" }],
+            price: {
+              value: 10,
+            },
+          },
+          "hello",
+        ],
+      },
+    ];
+
+    const result = hints.auto(things);
+    assert(result.type === "array");
+    assert(result.of.type === "mapping");
+    assert(result.of.of.children?.type === "array");
+    assert(result.of.of.children?.of?.type === "union");
+    assert(result.of.of.children?.of?.of.length === 2);
+    assert(result.of.of.children?.of?.of[0]?.type === "mapping");
+    assert(result.of.of.children?.of?.of[1]?.type === "string");
   });
 });

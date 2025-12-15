@@ -224,6 +224,17 @@ export namespace hints {
     });
 
   export namespace util {
+    export const lengthOfHint = (x: Hint): number => {
+      switch (x.type) {
+        case "union":
+          return x.of.length;
+        case "array":
+          return lengthOfHint(x.of);
+        default:
+          return 0;
+      }
+    };
+
     export const coerce = <T extends Hint>(x: unknown, hint: T): unknown => {
       const fn = hint._meta?.coerce;
       if (!fn) return x;
@@ -358,81 +369,103 @@ export namespace hints {
       return false;
     };
 
-    export function merge(x: Hint): Hint;
-    export function merge(x: Hint[]): Hint;
-    export function merge(x: Hint[] | Hint): Hint {
+    export const flatten = (
+      items: Hint[],
+    ): Extract<Hint, { type: "union" }> => {
+      const unions = items.filter((x) => x.type === "union");
+      if (unions.length <= 0) return hints.union(items);
+
+      const unionOfs = flatten(unions.map((x) => x.of).flat());
+      const rest = items.filter((x) => x.type !== "union");
+      return hints.union([...unionOfs.of, ...rest]);
+    };
+
+    export function refine(x: Hint): Hint;
+    export function refine(x: Hint[]): Hint;
+    export function refine(x: Hint[] | Hint): Hint {
       if (Array.isArray(x)) {
-        if (x.length <= 0) return hints.notKnown();
-        if (x.length === 1) return merge(x[0]!);
-        return hints.union(x);
+        if (x.length <= 0) return hints.array(hints.notKnown());
+        if (x.length === 1) return refine(x[0]!);
+
+        if (x.every((y) => y.type === "array")) {
+          const refined = refine(flatten(x.map((y) => y.of)));
+          return refined.type === "array" ? refined : hints.array(refined);
+        }
+
+        const mappings = x.filter((y) => y.type === "mapping");
+        const others = x.filter((y) => y.type !== "mapping");
+
+        if (mappings.length > 0 && others.length <= 0) {
+          return refineMappings(mappings);
+        }
+
+        if (mappings.length > 0 && others.length > 0) {
+          const a = refine(mappings);
+          const b = refine(others);
+          return hints.union([a, b]);
+        }
+
+        if (mappings.length <= 0 && others.length > 0) {
+          const xs = others.map((y) => refine(y));
+          return hints.union(xs);
+        }
+
+        return hints.array(hints.notKnown());
       }
 
       switch (x.type) {
         case "union": {
-          if (x.of.length === 1) return merge(x.of[0]!);
-          return x;
+          return refine(x.of);
         }
         case "array":
           return {
             ...x,
-            of: merge(x.of),
+            of: refine(x.of),
           };
         case "mapping":
           return {
             ...x,
             of: Object.fromEntries(
-              Object.entries(x.of).map(([k, v]) => [k, merge(v)]),
+              Object.entries(x.of).map(([k, v]) => [k, refine(v)]),
             ),
           };
       }
       return x;
     }
 
-    /**
-       @brief Turns `hint` into a more simple version if possible.
-     */
-    export const refine = (hint: Hint): Hint => {
-      switch (hint.type) {
-        case "array":
-          return { ...hint, of: refine(hint.of) };
-        case "mapping": {
-          return {
-            ...hint,
-            of: Object.fromEntries(
-              Object.entries(hint.of).map(([k, v]) => [k, refine(v)]),
-            ),
-          };
-        }
-        case "union": {
-          const ofs = hint.of;
-          if (ofs.every((x) => x.type === "mapping")) {
-            const allKeys = unique(ofs.map((x) => Object.keys(x.of)).flat());
-            const allHints: Record<
-              string,
-              Array<Hint | undefined>
-            > = Object.assign(
-              {},
-              ...allKeys.map((k) => ({ [k]: ofs.map((x) => x.of[k]) })),
-            );
-            const keyHints = allKeys.map((k): Record<string, Hint> => {
-              const hts = allHints[k]!;
-              const isOpt = hts.includes(undefined);
-              const variants = hts.filter((x) => typeof x !== "undefined");
-              const un = util.merge(hints.union(variants));
-              if (isOpt) return { [k]: hints.optional(un) };
-              return { [k]: un };
-            });
-            const obj = Object.assign({}, ...keyHints);
-            return hints.setOptional(
-              refine(hints.mapping(obj)),
-              hint._meta?.optional,
-            );
-          }
-          return hint;
-        }
-        default:
-          return hint;
-      }
+    export const refineMappings = (mappings: HintMapping[]): HintMapping => {
+      const allKeys = unique(mappings.map((x) => Object.keys(x.of)).flat());
+      const hintLookup: Record<string, Array<Hint | undefined>> = Object.assign(
+        {},
+        ...allKeys.map((k) => {
+          const m = uniqueBy(
+            mappings.map((x) => {
+              const r = x.of[k];
+              if (r) return refine(r);
+              return r;
+            }),
+            (x) => JSON.stringify(x),
+          );
+          return { [k]: m };
+        }),
+      );
+      const optionalKeys = allKeys.filter((k) =>
+        hintLookup[k]!.includes(undefined),
+      );
+      const getVariants = (key: string): Hint[] =>
+        hintLookup[key]!.filter((x) => typeof x !== "undefined");
+
+      const obj: Record<string, Hint> = Object.assign(
+        {},
+        ...allKeys.map((k) => {
+          const isOpt = optionalKeys.includes(k);
+          const un = refine(getVariants(k));
+          if (isOpt) return { [k]: hints.optional(un) };
+          return { [k]: un };
+        }),
+      );
+
+      return hints.mapping(obj);
     };
 
     /**
@@ -448,7 +481,7 @@ export namespace hints {
       if (x === null) return hints.nil();
       if (Array.isArray(x)) {
         if (x.every(isHint)) {
-          return util.merge(x);
+          return util.refine(x);
         }
         return hints.array(hints.union(x.map((v) => toHint(v))));
       }
@@ -469,9 +502,7 @@ export namespace hints {
    * @brief Automatically infer Hint from `x`, with refinements.
    */
   export const auto = (x: unknown): Hint => {
-    let y = util.toHint(x);
-    y = util.refine(y);
-    return y;
+    return util.refine(util.toHint(x));
   };
 }
 

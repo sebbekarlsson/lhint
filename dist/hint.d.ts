@@ -123,6 +123,7 @@ export declare namespace hints {
     };
     const notKnown: () => HintUnknown;
     namespace util {
+        const lengthOfHint: (x: Hint) => number;
         const coerce: <T extends Hint>(x: unknown, hint: T) => unknown;
         const coerceDeep: <T extends Hint>(x: unknown, hint: T) => unknown;
         const toHumanReadable: (x: Hint) => string;
@@ -133,12 +134,12 @@ export declare namespace hints {
         }>;
         const isNullable: (x: Hint) => boolean;
         const isOptional: (x: Hint) => boolean;
-        function merge(x: Hint): Hint;
-        function merge(x: Hint[]): Hint;
-        /**
-           @brief Turns `hint` into a more simple version if possible.
-         */
-        const refine: (hint: Hint) => Hint;
+        const flatten: (items: Hint[]) => Extract<Hint, {
+            type: "union";
+        }>;
+        function refine(x: Hint): Hint;
+        function refine(x: Hint[]): Hint;
+        const refineMappings: (mappings: HintMapping[]) => HintMapping;
         /**
          * @brief Automatically infer Hint from `x`, without any refinements.
          */

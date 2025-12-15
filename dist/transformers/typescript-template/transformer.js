@@ -21,20 +21,30 @@ exports.TypescriptTemplateTransformer = {
                     return "undefined";
                 case "unknown":
                     return "unknown";
-                case "array":
-                    return `Array<${transform(x.of, 0, 0)}>`;
+                case "array": {
+                    const len = hint_1.hints.util.lengthOfHint(x.of);
+                    if (len > 1) {
+                        return `Array<\n${(0, utils_1.mkPad)(padding + 2)}${transform(x.of, padding + 2, 0)}\n${(0, utils_1.mkPad)(padding)}>`;
+                    }
+                    return `Array<${transform(x.of, padding, 0)}>`;
+                }
                 case "literal-number":
                     return `${x.value}`;
                 case "literal-string":
                     return `"${x.value}"`;
                 case "union":
-                    return x.of.map((it) => transform(it, 0, 0)).join(" | ");
+                    return x.of
+                        .map((it) => transform(it, padding, 0))
+                        .join(x.of.length > 2 ? `\n${(0, utils_1.mkPad)(padding)}| ` : ` | `);
                 case "record":
                     return `Record<${transform(x.key, 0, 0)}, ${transform(x.value, 0, 0)}>`;
-                case "mapping":
+                case "mapping": {
+                    const entries = Object.entries(x.of);
+                    if (entries.length <= 0)
+                        return "{}";
                     return [
                         `{\n`,
-                        Object.entries(x.of)
+                        entries
                             .map(([k, v]) => {
                             const isOpt = hint_1.hints.util.isOptional(v);
                             return `${(0, utils_1.mkPad)(padding + 2)}${k}${isOpt ? "?" : ""}: ${transform(v, padding + 2, depth + 1)}`;
@@ -42,6 +52,7 @@ exports.TypescriptTemplateTransformer = {
                             .join(";\n"),
                         `\n${(0, utils_1.mkPad)(padding)}}`,
                     ].join("");
+                }
             }
         };
         return transform(x, 0, 0);
